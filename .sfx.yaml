@@ -1,0 +1,16 @@
+providers:
+  file: ./bin/file
+
+output:
+  type: env
+
+secrets:
+  SECRET_KEY:
+    ref: SECRET_KEY
+    provider: file
+  SECRET_KEY3:
+    ref: SECRET_KEY2
+    provider: file
+  SECRET_KEY1:
+    ref: SECRET_KEY3
+    provider: file
