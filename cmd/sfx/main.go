@@ -2,9 +2,10 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
+	"log"
+	"log/slog"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -14,55 +15,57 @@ import (
 	"sfx/internal/rpc"
 )
 
-func main() {
-	buf, err := os.ReadFile(".sfx.yaml")
-	if err != nil && errors.Is(err, os.ErrNotExist) {
-		fmt.Println("no sfx.yaml found in current directory")
-		os.Exit(1)
-	}
+var (
+	logger = log.New(os.Stdout, "ERROR: ", log.LstdFlags)
+)
 
-	var cfg config.Config
-	if err := yaml.Unmarshal(buf, &cfg); err != nil {
-		fmt.Println("error parsing sfx.yaml:", err)
-		os.Exit(1)
+func main() {
+	slog.SetLogLoggerLevel(slog.LevelInfo)
+	cfg, err := config.Load()
+	if err != nil {
+		logger.Fatal("failed to load configuration: ", err)
 	}
 
 	secrets := map[string][]byte{}
-	for n, s := range cfg.Secrets {
-		fmt.Println(s.Ref, s.Provider)
-
-		providerPath, ok := cfg.Providers[s.Provider]
-		if !ok {
-			fmt.Println("provider not found ", s.Provider, " in providers ", cfg.Providers)
-			os.Exit(1)
+	slog.Debug("Secrets", "secrets", cfg.Secrets)
+	for name, secret := range cfg.Secrets {
+		providerPath, ok := cfg.Providers[secret.Provider]
+		if !ok || providerPath == "" {
+			logger.Fatal("provider not found ", secret.Provider, " in providers ", cfg.Providers)
 		}
-		val, err := fetch(providerPath, s.Ref, s.ProviderOptions)
+
+		val, err := fetch(providerPath, secret.Ref, secret.ProviderOptions)
 		if err != nil {
-			fmt.Println("error fetching secret:", err)
-			os.Exit(1)
+			logger.Fatal("error fetching secret: ", err)
 		}
 
-		if secrets[n] != nil {
-			fmt.Println("duplicate secret name:", n)
+		if secrets[name] != nil {
+			logger.Println("duplicate secret name: ", name)
 		}
 
-		secrets[n] = val
+		secrets[name] = val
 	}
 
-	data, err := format("./bin/env", secrets, cfg.Output.OutputOptions)
+	exporterPath := cfg.Exporters[cfg.Output.Type]
+	if exporterPath == "" {
+		logger.Fatal("exporter not found for type: ", cfg.Output.Type)
+	}
+
+	data, err := format(exporterPath, secrets, cfg.Output.Options)
 	if err != nil {
-		fmt.Println("error formatting output:", err)
-		os.Exit(1)
+		logger.Fatal("error formatting output: ", err)
 	}
 
 	_, _ = io.Copy(os.Stdout, bytes.NewReader(data))
 }
 
-func fetch(path, ref string, options any) ([]byte, error) {
-	opts, err := yaml.Marshal(options)
+func fetch(path, ref string, options map[string]any) ([]byte, error) {
+	slog.Debug("fetching secret", "ref", ref, "path", path)
+	opts, err := marshalOptions(options)
 	if err != nil {
 		return nil, err
 	}
+
 	req := &rpc.SecretRequest{Ref: ref, Options: opts}
 	var resp rpc.SecretResponse
 	if err := client.Call(path, req, &resp); err != nil {
@@ -72,12 +75,20 @@ func fetch(path, ref string, options any) ([]byte, error) {
 	if resp.Error != "" {
 		return nil, fmt.Errorf("provider error: %s", resp.Error)
 	}
+	slog.Debug("fetching result", "ref", ref, "path", path, "value", string(resp.Value))
 
 	return resp.Value, nil
 }
 
-func format(path string, data map[string][]byte, options []byte) ([]byte, error) {
-	req := &rpc.ExportRequest{Values: data, Options: options}
+func format(path string, data map[string][]byte, options map[string]any) ([]byte, error) {
+	slog.Debug("formatting", "path", path, "data", data, "options", options)
+
+	opts, err := marshalOptions(options)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &rpc.ExportRequest{Values: data, Options: opts}
 	var resp rpc.ExportResponse
 	if err := client.Call(path, req, &resp); err != nil {
 		return nil, err
@@ -88,4 +99,11 @@ func format(path string, data map[string][]byte, options []byte) ([]byte, error)
 	}
 
 	return resp.GetPayload(), nil
+}
+
+func marshalOptions(options map[string]any) ([]byte, error) {
+	if len(options) == 0 {
+		return nil, nil
+	}
+	return yaml.Marshal(options)
 }

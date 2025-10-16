@@ -1,6 +1,10 @@
 GO ?= go
 PROTOC ?= protoc
+
 BIN_DIR := bin
+PLUGIN_BIN := $(BIN_DIR)/plugins
+EXPORTER_BIN := $(BIN_DIR)/exporters
+
 PLUGINS := file
 EXPORTERS := env
 
@@ -8,28 +12,31 @@ EXPORTERS := env
 
 all: build
 
-build: build-sfx build-plugins build-exporters
+build: build-plugins build-exporters build-sfx
 
 build-sfx: $(BIN_DIR)/sfx
 
-build-plugins: $(addprefix $(BIN_DIR)/, $(PLUGINS))
+build-plugins: $(addprefix $(PLUGIN_BIN)/, $(PLUGINS))
 
-build-exporters: $(addprefix $(BIN_DIR)/, $(EXPORTERS))
+build-exporters: $(addprefix $(EXPORTER_BIN)/, $(EXPORTERS))
 
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
 
-$(BIN_DIR)/sfx: | $(BIN_DIR)
+$(PLUGIN_BIN):
+	mkdir -p $(PLUGIN_BIN)
+
+$(EXPORTER_BIN):
+	mkdir -p $(EXPORTER_BIN)
+
+$(BIN_DIR)/sfx: build-plugins build-exporters | $(BIN_DIR)
 	$(GO) build -o $@ ./cmd/sfx
 
-$(BIN_DIR)/%: | $(BIN_DIR)
-ifneq (,$(filter $*, $(PLUGINS)))
+$(PLUGIN_BIN)/%: | $(PLUGIN_BIN)
 	$(GO) build -o $@ ./cmd/plugins/$*
-else ifneq (,$(filter $*, $(EXPORTERS)))
+
+$(EXPORTER_BIN)/%: | $(EXPORTER_BIN)
 	$(GO) build -o $@ ./cmd/exporters/$*
-else
-	$(error Unknown binary $*)
-endif
 
 fmt:
 	$(GO)fmt ./...

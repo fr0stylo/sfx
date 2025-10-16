@@ -1,11 +1,3 @@
-providers:
-  file: ./bin/file
-
-output:
-  type: env
-
-
-
 secrets:
   SECRET_KEY:
     ref: SECRET_KEY

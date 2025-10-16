@@ -1,6 +1,6 @@
 # sfx
 
-`sfx` is a pluggable secret fetcher and exporter CLI. It loads configuration from `.sfx.yaml`, executes provider plugins to retrieve secrets, and renders the collected data through exporter plugins (for example, to a `.env` template).
+`sfx` is a pluggable secret fetcher and exporter CLI. It loads configuration from `.sfx.yaml` (via [spf13/viper](https://github.com/spf13/viper)), executes provider plugins to retrieve secrets, and renders the collected data through exporter plugins (for example, to a `.env` template).
 
 ## Features
 - Length-delimited protobuf protocol over stdio for stable host↔plugin communication.
@@ -22,11 +22,14 @@ go build -o bin/file ./cmd/plugins/file
 go build -o bin/env ./cmd/exporters/env
 ```
 
-Create a `.sfx.yaml` that maps secrets to provider binaries and selects an exporter:
+Create a `.sfx.yaml` that maps secrets to provider binaries and selects an exporter. Defaults are provided for the sample `file` provider (`./bin/file`) and `env` exporter (`./bin/env`), so you can omit those entries if the defaults suit you:
 
 ```yaml
 providers:
   file: ./bin/file
+
+exporters:
+  env: ./bin/env
 
 output:
   type: env

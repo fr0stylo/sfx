@@ -9,7 +9,8 @@ import (
 
 // Request is the data made available to exporter handlers.
 type Request struct {
-	Values map[string][]byte
+	Values  map[string][]byte
+	Options []byte
 }
 
 // Handler processes the provided values and returns an error if export fails.
@@ -38,7 +39,7 @@ func Run(h Handler) {
 		return
 	}
 
-	resp, err := h.Handle(Request{Values: req.Values})
+	resp, err := h.Handle(Request{Values: req.GetValues(), Options: req.GetOptions()})
 	if err != nil {
 		writeError(err)
 		return
