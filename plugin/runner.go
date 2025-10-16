@@ -9,7 +9,8 @@ import (
 
 // Request is the simplified input provided to plugin handlers.
 type Request struct {
-	Ref string
+	Ref     string
+	Options []byte
 }
 
 // Response is the simplified output expected from plugin handlers.
@@ -38,7 +39,7 @@ func Run(h Handler) {
 		return
 	}
 
-	resp, err := h.Handle(Request{Ref: req.GetRef()})
+	resp, err := h.Handle(Request{Ref: req.GetRef(), Options: req.GetOptions()})
 	if err != nil {
 		writeError(err)
 		return

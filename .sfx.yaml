@@ -4,10 +4,14 @@ providers:
 output:
   type: env
 
+
+
 secrets:
   SECRET_KEY:
     ref: SECRET_KEY
     provider: file
+    provider_options:
+      path: ./bin/file
   SECRET_KEY3:
     ref: SECRET_KEY2
     provider: file

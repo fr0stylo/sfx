@@ -36,7 +36,7 @@ func main() {
 			fmt.Println("provider not found ", s.Provider, " in providers ", cfg.Providers)
 			os.Exit(1)
 		}
-		val, err := fetch(providerPath, s.Ref)
+		val, err := fetch(providerPath, s.Ref, s.ProviderOptions)
 		if err != nil {
 			fmt.Println("error fetching secret:", err)
 			os.Exit(1)
@@ -49,7 +49,7 @@ func main() {
 		secrets[n] = val
 	}
 
-	data, err := format("./bin/env", secrets)
+	data, err := format("./bin/env", secrets, cfg.Output.OutputOptions)
 	if err != nil {
 		fmt.Println("error formatting output:", err)
 		os.Exit(1)
@@ -58,8 +58,12 @@ func main() {
 	_, _ = io.Copy(os.Stdout, bytes.NewReader(data))
 }
 
-func fetch(path, ref string) ([]byte, error) {
-	req := &rpc.SecretRequest{Ref: ref}
+func fetch(path, ref string, options any) ([]byte, error) {
+	opts, err := yaml.Marshal(options)
+	if err != nil {
+		return nil, err
+	}
+	req := &rpc.SecretRequest{Ref: ref, Options: opts}
 	var resp rpc.SecretResponse
 	if err := client.Call(path, req, &resp); err != nil {
 		return nil, err
@@ -72,8 +76,8 @@ func fetch(path, ref string) ([]byte, error) {
 	return resp.Value, nil
 }
 
-func format(path string, data map[string][]byte) ([]byte, error) {
-	req := &rpc.ExportRequest{Values: data}
+func format(path string, data map[string][]byte, options []byte) ([]byte, error) {
+	req := &rpc.ExportRequest{Values: data, Options: options}
 	var resp rpc.ExportResponse
 	if err := client.Call(path, req, &resp); err != nil {
 		return nil, err

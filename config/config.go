@@ -7,11 +7,13 @@ type Config struct {
 }
 
 type Secret struct {
-	Ref      string `yaml:"ref"`
-	Provider string `yaml:"provider"`
+	Ref             string `yaml:"ref"`
+	Provider        string `yaml:"provider"`
+	ProviderOptions any    `yaml:"provider_options"`
 }
 
 type Output struct {
-	Type     string `yaml:"type"`
-	Template string `yaml:"template"`
+	Type          string `yaml:"type"`
+	Template      string `yaml:"template"`
+	OutputOptions []byte `yaml:"output_options"`
 }
