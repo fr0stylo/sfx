@@ -113,7 +113,7 @@ func fetchSecret(ctx context.Context, path, ref string, options map[string]any) 
 
 	req := &rpc.SecretRequest{Ref: ref, Options: opts}
 	var resp rpc.SecretResponse
-	if err := client.Call(ctx, path, req, &resp); err != nil {
+	if err := client.CallContext(ctx, path, req, &resp); err != nil {
 		return nil, err
 	}
 
@@ -131,7 +131,7 @@ func formatSecrets(ctx context.Context, path string, data map[string][]byte, opt
 
 	req := &rpc.ExportRequest{Values: data, Options: opts}
 	var resp rpc.ExportResponse
-	if err := client.Call(ctx, path, req, &resp); err != nil {
+	if err := client.CallContext(ctx, path, req, &resp); err != nil {
 		return nil, err
 	}
 

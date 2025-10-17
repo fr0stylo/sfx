@@ -33,20 +33,22 @@ func (f HandlerFunc) Handle(req Request) (Response, error) {
 
 // Run wires stdin/stdout to the protobuf transport and invokes the provided handler.
 func Run(h Handler) {
-	req := &rpc.SecretRequest{}
-	if err := rpc.ReadDelimited(os.Stdin, req); err != nil {
-		writeError(fmt.Errorf("decode request: %w", err))
-		return
-	}
+	for {
+		req := &rpc.SecretRequest{}
+		if err := rpc.ReadDelimited(os.Stdin, req); err != nil {
+			writeError(fmt.Errorf("decode request: %w", err))
+			return
+		}
 
-	resp, err := h.Handle(Request{Ref: req.GetRef(), Options: req.GetOptions()})
-	if err != nil {
-		writeError(err)
-		return
-	}
+		resp, err := h.Handle(Request{Ref: req.GetRef(), Options: req.GetOptions()})
+		if err != nil {
+			writeError(err)
+			return
+		}
 
-	if err := rpc.WriteDelimited(os.Stdout, &rpc.SecretResponse{Value: resp.Value}); err != nil {
-		fmt.Fprintf(os.Stderr, "write response: %v\n", err)
+		if err := rpc.WriteDelimited(os.Stdout, &rpc.SecretResponse{Value: resp.Value}); err != nil {
+			fmt.Fprintf(os.Stderr, "write response: %v\n", err)
+		}
 	}
 }
 
