@@ -42,6 +42,8 @@ func Load() (Config, error) {
 	v.SetDefault("providers.gcpsecrets", "./bin/providers/gcpsecrets")
 	v.SetDefault("providers.azurevault", "./bin/providers/azurevault")
 	v.SetDefault("exporters.env", "./bin/exporters/env")
+	v.SetDefault("exporters.tfvars", "./bin/exporters/tfvars")
+	v.SetDefault("exporters.template", "./bin/exporters/template")
 	v.SetDefault("output.type", "env")
 
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))

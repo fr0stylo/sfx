@@ -20,7 +20,7 @@ Clone the repository, then build the binaries:
 make build
 ```
 
-Create a `.sfx.yaml` that maps secrets to provider binaries and selects an exporter. Defaults are provided for the built-in providers (`file`, `vault`, `sops`, `awssecrets`, `awsssm`, `gcpsecrets`, `azurevault`) as well as the sample `env` exporter (`./bin/exporters/env`), so you can omit those entries if the defaults suit you:
+Create a `.sfx.yaml` that maps secrets to provider binaries and selects an exporter. Defaults are provided for the built-in providers (`file`, `vault`, `sops`, `awssecrets`, `awsssm`, `gcpsecrets`, `azurevault`) and exporters (`env`, `tfvars`, `template`), so you can omit those entries if the defaults suit you:
 
 ```yaml
 providers:
@@ -28,6 +28,8 @@ providers:
 
 exporters:
   env: ./bin/exporters/env
+  tfvars: ./bin/exporters/tfvars
+  template: ./bin/exporters/template
 
 output:
   type: env
@@ -127,6 +129,48 @@ secrets:
   STORAGE_CONN_STRING:
     ref: finance-vault/storage-conn#latest
     provider: azurevault
+```
+
+### ENV Exporter
+- Output type: `env`.
+- Options: `key_template` (Sprig-enabled Go template applied per key).
+- Renders lexicographically-sorted `KEY=value` lines, quoting values when necessary.
+
+Example:
+
+```yaml
+output:
+  type: env
+  options:
+    key_template: "{{ .Value | replace \"-\" \"_\" | upper }}"
+```
+
+### TFVARS Exporter
+- Output type: `tfvars`.
+- Options: `order` (list of keys to emit first; remaining keys are sorted alphabetically).
+- Strings are quoted automatically; multi-line values use heredoc syntax; numeric/bool strings are left unquoted.
+
+Example:
+
+```yaml
+output:
+  type: tfvars
+  options:
+    order: [db_password, api_key]
+```
+
+### Template Exporter
+- Output type: `template`.
+- Options: `template` (inline Go template), `template_path` (file path alternative), `delims.left`, `delims.right` (custom delimiters).
+- The template receives `.Values` (map of strings) and `.Raw` (map of byte slices); Sprig functions are preloaded.
+
+Example:
+
+```yaml
+output:
+  type: template
+  options:
+    template_path: ./templates/.env.tmpl
 ```
 
 ## Architecture

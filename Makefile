@@ -6,7 +6,7 @@ PLUGIN_BIN := $(BIN_DIR)/providers
 EXPORTER_BIN := $(BIN_DIR)/exporters
 
 PROVIDERS := file vault sops awssecrets awsssm gcpsecrets azurevault
-EXPORTERS := env
+EXPORTERS := env tfvars template
 
 .PHONY: all build build-sfx build-providers build-exporters fmt test proto clean
 

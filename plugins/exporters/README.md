@@ -5,3 +5,5 @@ The table below lists the option keys (`output.options`) recognised by each expo
 | Exporter | Option Keys |
 |----------|-------------|
 | `env` | `key_template` |
+| `tfvars` | `order` |
+| `template` | `template`, `template_path`, `delims.left`, `delims.right` |
