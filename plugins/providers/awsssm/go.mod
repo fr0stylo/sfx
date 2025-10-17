@@ -1,4 +1,4 @@
-module sfx/plugins/providers/awsssm
+module github.com/fr0stylo/sfx/plugins/providers/awsssm
 
 go 1.25.1
 

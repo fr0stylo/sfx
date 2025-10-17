@@ -1,4 +1,4 @@
-module sfx/plugins/providers/vault
+module github.com/fr0stylo/sfx/plugins/providers/vault
 
 go 1.25.1
 

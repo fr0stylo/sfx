@@ -31,7 +31,7 @@ $(EXPORTER_BIN):
 	mkdir -p $(EXPORTER_BIN)
 
 $(BIN_DIR)/sfx: build-providers build-exporters | $(BIN_DIR)
-	$(GO) build -o $@ ./cmd/sfx
+	$(GO) build -o $@ ./cmd
 
 $(PLUGIN_BIN)/%: | $(PLUGIN_BIN)
 	$(GO) -C plugins/providers/$* build -o $(abspath $@)

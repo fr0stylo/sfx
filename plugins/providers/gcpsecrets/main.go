@@ -11,7 +11,7 @@ import (
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"gopkg.in/yaml.v3"
 
-	"sfx/provider"
+	"github.com/fr0stylo/sfx/provider"
 )
 
 const defaultGCPSecretTimeout = 30 * time.Second

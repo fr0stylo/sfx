@@ -1,4 +1,4 @@
-module sfx/plugins/providers/sops
+module github.com/fr0stylo/sfx/plugins/providers/sops
 
 go 1.25.1
 

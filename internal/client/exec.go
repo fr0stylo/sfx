@@ -9,7 +9,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	"sfx/internal/rpc"
+	"github.com/fr0stylo/sfx/internal/rpc"
 )
 
 // Call executes the binary at path, sending the protobuf request and decoding the response.

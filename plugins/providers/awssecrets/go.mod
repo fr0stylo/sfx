@@ -1,4 +1,4 @@
-module sfx/plugins/providers/awssecrets
+module github.com/fr0stylo/sfx/plugins/providers/awssecrets
 
 go 1.25.1
 

@@ -1,4 +1,4 @@
-module sfx/plugins/providers/azurevault
+module github.com/fr0stylo/sfx/plugins/providers/azurevault
 
 go 1.25.1
 

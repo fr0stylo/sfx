@@ -13,9 +13,9 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 
-	"sfx/config"
-	"sfx/internal/client"
-	"sfx/internal/rpc"
+	"github.com/fr0stylo/sfx/config"
+	"github.com/fr0stylo/sfx/internal/client"
+	"github.com/fr0stylo/sfx/internal/rpc"
 )
 
 func init() {

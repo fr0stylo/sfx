@@ -10,7 +10,7 @@ import (
 	"github.com/getsops/sops/v3/decrypt"
 	"gopkg.in/yaml.v3"
 
-	"sfx/provider"
+	"github.com/fr0stylo/sfx/provider"
 )
 
 type options struct {

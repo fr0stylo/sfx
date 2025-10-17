@@ -7,7 +7,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"sfx/exporter"
+	"github.com/fr0stylo/sfx/exporter"
 )
 
 type options struct {

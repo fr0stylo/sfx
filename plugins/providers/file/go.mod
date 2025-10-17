@@ -1,4 +1,4 @@
-module sfx/plugins/providers/file
+module github.com/fr0stylo/sfx/plugins/providers/file
 
 go 1.25.1
 

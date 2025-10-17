@@ -1,4 +1,4 @@
-module sfx/plugins/exporters/template
+module github.com/fr0stylo/sfx/plugins/exporters/template
 
 go 1.25.1
 

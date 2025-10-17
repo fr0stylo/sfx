@@ -10,7 +10,7 @@ import (
 	vault "github.com/hashicorp/vault/api"
 	"gopkg.in/yaml.v3"
 
-	"sfx/provider"
+	"github.com/fr0stylo/sfx/provider"
 )
 
 type options struct {

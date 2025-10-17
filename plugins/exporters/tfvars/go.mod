@@ -1,4 +1,4 @@
-module sfx/plugins/exporters/tfvars
+module github.com/fr0stylo/sfx/plugins/exporters/tfvars
 
 go 1.25.1
 

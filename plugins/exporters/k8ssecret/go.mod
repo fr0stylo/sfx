@@ -1,4 +1,4 @@
-module sfx/plugins/exporters/k8ssecret
+module github.com/fr0stylo/sfx/plugins/exporters/k8ssecret
 
 go 1.25.1
 

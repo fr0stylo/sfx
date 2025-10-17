@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"gopkg.in/yaml.v3"
 
-	"sfx/provider"
+	"github.com/fr0stylo/sfx/provider"
 )
 
 const defaultAWSSSMTimeout = 30 * time.Second

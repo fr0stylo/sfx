@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package rpc;
 
-option go_package = "sfx/internal/rpc";
+option go_package = "github.com/fr0stylo/sfx/internal/rpc";
 
 message ExportRequest {
   map<string, bytes> values = 1;

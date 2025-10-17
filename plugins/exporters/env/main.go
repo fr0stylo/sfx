@@ -10,7 +10,7 @@ import (
 	"github.com/Masterminds/sprig/v3"
 	"gopkg.in/yaml.v3"
 
-	"sfx/exporter"
+	"github.com/fr0stylo/sfx/exporter"
 )
 
 func main() {

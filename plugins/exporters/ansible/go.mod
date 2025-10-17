@@ -1,4 +1,4 @@
-module sfx/plugins/exporters/ansible
+module github.com/fr0stylo/sfx/plugins/exporters/ansible
 
 go 1.25.1
 

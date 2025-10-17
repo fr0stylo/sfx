@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"sfx/cmd/sfx/cmd"
+	"github.com/fr0stylo/sfx/cmd/cmd"
 )
 
 func main() {

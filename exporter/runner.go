@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"sfx/internal/rpc"
+	"github.com/fr0stylo/sfx/internal/rpc"
 )
 
 // Request is the data made available to exporter handlers.

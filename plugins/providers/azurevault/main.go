@@ -12,7 +12,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets"
 	"gopkg.in/yaml.v3"
 
-	"sfx/provider"
+	"github.com/fr0stylo/sfx/provider"
 )
 
 const defaultAzureVaultTimeout = 30 * time.Second

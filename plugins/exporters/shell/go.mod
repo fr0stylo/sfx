@@ -1,4 +1,4 @@
-module sfx/plugins/exporters/shell
+module github.com/fr0stylo/sfx/plugins/exporters/shell
 
 go 1.25.1
 

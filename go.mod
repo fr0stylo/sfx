@@ -1,4 +1,4 @@
-module sfx
+module github.com/fr0stylo/sfx
 
 go 1.25.1
 

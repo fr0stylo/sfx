@@ -1,4 +1,4 @@
-module sfx/plugins/exporters/env
+module github.com/fr0stylo/sfx/plugins/exporters/env
 
 go 1.25.1
 

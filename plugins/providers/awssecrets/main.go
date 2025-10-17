@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"gopkg.in/yaml.v3"
 
-	"sfx/provider"
+	"github.com/fr0stylo/sfx/provider"
 )
 
 const defaultAWSSecretsTimeout = 30 * time.Second

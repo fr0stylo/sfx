@@ -1,4 +1,4 @@
-module sfx/plugins/providers/gcpsecrets
+module github.com/fr0stylo/sfx/plugins/providers/gcpsecrets
 
 go 1.25.1
 
