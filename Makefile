@@ -5,7 +5,7 @@ BIN_DIR := bin
 PLUGIN_BIN := $(BIN_DIR)/providers
 EXPORTER_BIN := $(BIN_DIR)/exporters
 
-PROVIDERS := file
+PROVIDERS := file vault sops awssecrets awsssm gcpsecrets azurevault
 EXPORTERS := env
 
 .PHONY: all build build-sfx build-providers build-exporters fmt test proto clean

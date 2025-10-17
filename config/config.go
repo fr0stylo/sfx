@@ -35,6 +35,12 @@ func Load() (Config, error) {
 	v.AddConfigPath(".")
 
 	v.SetDefault("providers.file", "./bin/providers/file")
+	v.SetDefault("providers.vault", "./bin/providers/vault")
+	v.SetDefault("providers.sops", "./bin/providers/sops")
+	v.SetDefault("providers.awssecrets", "./bin/providers/awssecrets")
+	v.SetDefault("providers.awsssm", "./bin/providers/awsssm")
+	v.SetDefault("providers.gcpsecrets", "./bin/providers/gcpsecrets")
+	v.SetDefault("providers.azurevault", "./bin/providers/azurevault")
 	v.SetDefault("exporters.env", "./bin/exporters/env")
 	v.SetDefault("output.type", "env")
 
