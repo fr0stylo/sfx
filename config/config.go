@@ -29,31 +29,30 @@ type Output struct {
 
 // Load reads configuration using viper, applies defaults, and decodes into Config.
 func Load() (Config, error) {
-	v := viper.New()
-	v.SetConfigName(".sfx")
-	v.SetConfigType("yaml")
-	v.AddConfigPath(".")
+	viper.SetConfigName(".sfx")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
 
-	v.SetDefault("providers.file", "./bin/providers/file")
-	v.SetDefault("providers.vault", "./bin/providers/vault")
-	v.SetDefault("providers.sops", "./bin/providers/sops")
-	v.SetDefault("providers.awssecrets", "./bin/providers/awssecrets")
-	v.SetDefault("providers.awsssm", "./bin/providers/awsssm")
-	v.SetDefault("providers.gcpsecrets", "./bin/providers/gcpsecrets")
-	v.SetDefault("providers.azurevault", "./bin/providers/azurevault")
-	v.SetDefault("exporters.env", "./bin/exporters/env")
-	v.SetDefault("exporters.tfvars", "./bin/exporters/tfvars")
-	v.SetDefault("exporters.template", "./bin/exporters/template")
-	v.SetDefault("exporters.shell", "./bin/exporters/shell")
-	v.SetDefault("exporters.k8ssecret", "./bin/exporters/k8ssecret")
-	v.SetDefault("exporters.ansible", "./bin/exporters/ansible")
-	v.SetDefault("output.type", "env")
+	viper.SetDefault("providers.file", "./bin/providers/file")
+	viper.SetDefault("providers.vault", "./bin/providers/vault")
+	viper.SetDefault("providers.sops", "./bin/providers/sops")
+	viper.SetDefault("providers.awssecrets", "./bin/providers/awssecrets")
+	viper.SetDefault("providers.awsssm", "./bin/providers/awsssm")
+	viper.SetDefault("providers.gcpsecrets", "./bin/providers/gcpsecrets")
+	viper.SetDefault("providers.azurevault", "./bin/providers/azurevault")
+	viper.SetDefault("exporters.env", "./bin/exporters/env")
+	viper.SetDefault("exporters.tfvars", "./bin/exporters/tfvars")
+	viper.SetDefault("exporters.template", "./bin/exporters/template")
+	viper.SetDefault("exporters.shell", "./bin/exporters/shell")
+	viper.SetDefault("exporters.k8ssecret", "./bin/exporters/k8ssecret")
+	viper.SetDefault("exporters.ansible", "./bin/exporters/ansible")
+	viper.SetDefault("output.type", "env")
 
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	v.SetEnvPrefix("SFX")
-	v.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.SetEnvPrefix("SFX")
+	viper.AutomaticEnv()
 
-	if err := v.ReadInConfig(); err != nil {
+	if err := viper.ReadInConfig(); err != nil {
 		var notFound viper.ConfigFileNotFoundError
 		if errors.As(err, &notFound) {
 			return Config{}, fmt.Errorf("no .sfx.yaml found in current directory")
@@ -62,7 +61,7 @@ func Load() (Config, error) {
 	}
 
 	var cfg Config
-	if err := v.Unmarshal(&cfg); err != nil {
+	if err := viper.Unmarshal(&cfg); err != nil {
 		return Config{}, fmt.Errorf("unmarshal config: %w", err)
 	}
 

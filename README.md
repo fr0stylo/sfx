@@ -120,7 +120,17 @@ go build -o bin/exporters/env ./plugins/exporters/env
 2. **Run sfx**
 
    ```bash
-   ./bin/sfx > .env
+   ./bin/sfx fetch > .env
+   ```
+
+   Override exporter settings on the fly:
+
+   ```bash
+   ./bin/sfx fetch \
+     --output template \
+     --option template_path=./templates/.env.tmpl \
+     --exporter ./bin/exporters/template \
+     > .env
    ```
 
    The exporter renders the aggregated secrets to stdout. Redirect or pipe the output into the desired workflow.
