@@ -9,7 +9,7 @@ bin/
 *.dll
 *.so
 *.dylib
-
+*.xml
 # Test binary, built with `go test -c`
 *.test
 

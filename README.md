@@ -6,7 +6,7 @@
 - Length-delimited protobuf protocol over stdio for stable host↔plugin communication.
 - Lightweight helper packages for writing provider plugins (`sfx/plugin`) and exporters (`sfx/exporter`) without touching internal message types.
 - Shared execution helper (`sfx/internal/client`) for launching any plugin with a protobuf request/response contract.
-- Sample provider (`cmd/plugins/file`) and exporter (`cmd/exporters/env`) illustrating the extension points.
+- Sample provider (`plugins/providers/file`) and exporter (`plugins/exporters/env`) illustrating the extension points. Option key summaries live in `plugins/providers/README.md` and `plugins/exporters/README.md`; each plugin folder includes a README describing its configuration pattern.
 
 ## Getting Started
 Prerequisites:
@@ -17,19 +17,17 @@ Prerequisites:
 Clone the repository, then build the binaries:
 
 ```bash
-go build -o bin/sfx ./cmd/sfx
-go build -o bin/file ./cmd/plugins/file
-go build -o bin/env ./cmd/exporters/env
+make build
 ```
 
 Create a `.sfx.yaml` that maps secrets to provider binaries and selects an exporter. Defaults are provided for the built-in providers (`file`, `vault`, `sops`, `awssecrets`, `awsssm`, `gcpsecrets`, `azurevault`) as well as the sample `env` exporter (`./bin/exporters/env`), so you can omit those entries if the defaults suit you:
 
 ```yaml
 providers:
-  file: ./bin/file
+  file: ./bin/providers/file
 
 exporters:
-  env: ./bin/env
+  env: ./bin/exporters/env
 
 output:
   type: env
@@ -178,8 +176,8 @@ mv proto/*.pb.go internal/rpc/
 
 ## Development
 - Format Go code with `gofmt`.
-- Run tests/builds with `go build ./...` (plugins are small binaries and can be rebuilt individually).
-- Keep repository binaries in `bin/` in sync (`go build -o bin/<name> ./cmd/...`).
+- Build the full toolchain with `make build` (uses the workspace-aware Makefile). Use `make clean` to clear `bin/`.
+- Target a single module with `go build ./cmd/sfx`, `go -C plugins/providers build ./vault`, etc.—`go.work` keeps the modules linked locally.
 
 ## License
 Distributed under the MIT License. See [LICENSE](LICENSE) for details.
