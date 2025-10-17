@@ -2,11 +2,15 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/hcl/v2/hclwrite"
+	"github.com/zclconf/go-cty/cty"
+	ctyjson "github.com/zclconf/go-cty/cty/json"
 	"gopkg.in/yaml.v3"
 
 	"sfx/exporter"
@@ -30,16 +34,24 @@ func handle(req exporter.Request) (exporter.Response, error) {
 
 	keys := orderedKeys(req.Values, opts.Order)
 
-	var buf bytes.Buffer
-	for i, key := range keys {
-		if i > 0 {
-			buf.WriteByte('\n')
-		}
-		buf.WriteString(key)
-		buf.WriteString(" = ")
-		buf.WriteString(formatValue(req.Values[key]))
+	file := hclwrite.NewEmptyFile()
+	body := file.Body()
+
+	for _, key := range keys {
+		value := req.Values[key]
+		ctyVal := decodeValue(value)
+		body.SetAttributeValue(key, ctyVal)
 	}
-	buf.WriteByte('\n')
+
+	var buf bytes.Buffer
+	if _, err := file.WriteTo(&buf); err != nil {
+		return exporter.Response{}, fmt.Errorf("render tfvars: %w", err)
+	}
+
+	// Ensure trailing newline
+	if !strings.HasSuffix(buf.String(), "\n") {
+		buf.WriteByte('\n')
+	}
 
 	return exporter.Response{Payload: buf.Bytes()}, nil
 }
@@ -67,37 +79,50 @@ func orderedKeys(values map[string][]byte, order []string) []string {
 	return out
 }
 
-func formatValue(b []byte) string {
-	s := string(b)
-	if strings.Contains(s, "\n") {
-		return heredoc(s)
+func decodeValue(b []byte) cty.Value {
+	if len(b) == 0 {
+		return cty.StringVal("")
 	}
-	if isBool(s) || isNumeric(s) {
-		return s
+	str := strings.TrimSpace(string(b))
+
+	if v, err := strconv.ParseBool(str); err == nil {
+		return cty.BoolVal(v)
 	}
-	return strconv.Quote(s)
+	if i, err := strconv.ParseInt(str, 10, 64); err == nil {
+		return cty.NumberIntVal(i)
+	}
+	if f, err := strconv.ParseFloat(str, 64); err == nil {
+		return cty.NumberFloatVal(f)
+	}
+
+	// Try to treat the payload as JSON to support complex structures.
+	if maybeJSON(str) {
+		if val, err := jsonToCty([]byte(str)); err == nil && val.Type() != cty.NilType {
+			return val
+		}
+	}
+
+	return cty.StringVal(string(b))
 }
 
-func heredoc(s string) string {
-	const marker = "EOF"
-	return fmt.Sprintf("<<%s\n%s\n%s", marker, s, marker)
-}
-
-func isBool(s string) bool {
-	if s == "" {
+func maybeJSON(s string) bool {
+	if len(s) < 2 {
 		return false
 	}
-	_, err := strconv.ParseBool(s)
-	return err == nil
+	first := s[0]
+	last := s[len(s)-1]
+	switch first {
+	case '{':
+		return last == '}'
+	case '[':
+		return last == ']'
+	case '"':
+		return last == '"'
+	}
+	return false
 }
 
-func isNumeric(s string) bool {
-	if s == "" {
-		return false
-	}
-	if _, err := strconv.ParseInt(s, 10, 64); err == nil {
-		return true
-	}
-	_, err := strconv.ParseFloat(s, 64)
-	return err == nil
+func jsonToCty(b []byte) (cty.Value, error) {
+	raw := json.RawMessage(b)
+	return ctyjson.Unmarshal(raw, cty.DynamicPseudoType)
 }
