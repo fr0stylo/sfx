@@ -2,21 +2,21 @@ GO ?= go
 PROTOC ?= protoc
 
 BIN_DIR := bin
-PLUGIN_BIN := $(BIN_DIR)/plugins
+PLUGIN_BIN := $(BIN_DIR)/providers
 EXPORTER_BIN := $(BIN_DIR)/exporters
 
-PLUGINS := file
+PROVIDERS := file
 EXPORTERS := env
 
-.PHONY: all build build-sfx build-plugins build-exporters fmt test proto clean
+.PHONY: all build build-sfx build-providers build-exporters fmt test proto clean
 
 all: build
 
-build: build-plugins build-exporters build-sfx
+build: build-providers build-exporters build-sfx
 
 build-sfx: $(BIN_DIR)/sfx
 
-build-plugins: $(addprefix $(PLUGIN_BIN)/, $(PLUGINS))
+build-providers: $(addprefix $(PLUGIN_BIN)/, $(PROVIDERS))
 
 build-exporters: $(addprefix $(EXPORTER_BIN)/, $(EXPORTERS))
 
@@ -29,11 +29,11 @@ $(PLUGIN_BIN):
 $(EXPORTER_BIN):
 	mkdir -p $(EXPORTER_BIN)
 
-$(BIN_DIR)/sfx: build-plugins build-exporters | $(BIN_DIR)
+$(BIN_DIR)/sfx: build-providers build-exporters | $(BIN_DIR)
 	$(GO) build -o $@ ./cmd/sfx
 
 $(PLUGIN_BIN)/%: | $(PLUGIN_BIN)
-	$(GO) build -o $@ ./cmd/plugins/$*
+	$(GO) build -o $@ ./cmd/providers/$*
 
 $(EXPORTER_BIN)/%: | $(EXPORTER_BIN)
 	$(GO) build -o $@ ./cmd/exporters/$*

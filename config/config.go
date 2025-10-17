@@ -34,7 +34,7 @@ func Load() (Config, error) {
 	v.SetConfigType("yaml")
 	v.AddConfigPath(".")
 
-	v.SetDefault("providers.file", "./bin/plugins/file")
+	v.SetDefault("providers.file", "./bin/providers/file")
 	v.SetDefault("exporters.env", "./bin/exporters/env")
 	v.SetDefault("output.type", "env")
 
