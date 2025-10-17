@@ -8,10 +8,10 @@ import (
 	"time"
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
-	secretmanagerpb "cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
+	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"gopkg.in/yaml.v3"
 
-	"sfx/plugin"
+	"sfx/provider"
 )
 
 const defaultGCPSecretTimeout = 30 * time.Second
@@ -24,20 +24,20 @@ type options struct {
 }
 
 func main() {
-	plugin.Run(plugin.HandlerFunc(handle))
+	provider.Run(provider.HandlerFunc(handle))
 }
 
-func handle(req plugin.Request) (plugin.Response, error) {
+func handle(req provider.Request) (provider.Response, error) {
 	var opts options
 	if len(req.Options) > 0 {
 		if err := yaml.Unmarshal(req.Options, &opts); err != nil {
-			return plugin.Response{}, fmt.Errorf("parse options: %w", err)
+			return provider.Response{}, fmt.Errorf("parse options: %w", err)
 		}
 	}
 
 	name, err := resolveResource(req.Ref, opts)
 	if err != nil {
-		return plugin.Response{}, err
+		return provider.Response{}, err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), resolveTimeout(opts.Timeout, defaultGCPSecretTimeout))
@@ -45,7 +45,7 @@ func handle(req plugin.Request) (plugin.Response, error) {
 
 	client, err := secretmanager.NewClient(ctx)
 	if err != nil {
-		return plugin.Response{}, fmt.Errorf("create secret manager client: %w", err)
+		return provider.Response{}, fmt.Errorf("create secret manager client: %w", err)
 	}
 	defer client.Close()
 
@@ -53,10 +53,10 @@ func handle(req plugin.Request) (plugin.Response, error) {
 		Name: name,
 	})
 	if err != nil {
-		return plugin.Response{}, fmt.Errorf("access %q: %w", name, err)
+		return provider.Response{}, fmt.Errorf("access %q: %w", name, err)
 	}
 
-	return plugin.Response{Value: resp.GetPayload().GetData()}, nil
+	return provider.Response{Value: resp.GetPayload().GetData()}, nil
 }
 
 func resolveResource(ref string, opts options) (string, error) {
