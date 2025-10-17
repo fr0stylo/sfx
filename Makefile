@@ -5,7 +5,7 @@ BIN_DIR := bin
 PLUGIN_BIN := $(BIN_DIR)/providers
 EXPORTER_BIN := $(BIN_DIR)/exporters
 
-PROVIDERS := file
+PROVIDERS := file vault sops awssecrets awsssm gcpsecrets azurevault
 EXPORTERS := env
 
 .PHONY: all build build-sfx build-providers build-exporters fmt test proto clean
@@ -33,10 +33,10 @@ $(BIN_DIR)/sfx: build-providers build-exporters | $(BIN_DIR)
 	$(GO) build -o $@ ./cmd/sfx
 
 $(PLUGIN_BIN)/%: | $(PLUGIN_BIN)
-	$(GO) build -o $@ ./cmd/providers/$*
+	$(GO) -C plugins/providers/$* build -o $(abspath $@)
 
 $(EXPORTER_BIN)/%: | $(EXPORTER_BIN)
-	$(GO) build -o $@ ./cmd/exporters/$*
+	$(GO) -C plugins/exporters/$* build -o $(abspath $@)
 
 fmt:
 	$(GO)fmt ./...
