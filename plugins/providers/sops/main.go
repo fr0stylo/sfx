@@ -10,7 +10,7 @@ import (
 	"github.com/getsops/sops/v3/decrypt"
 	"gopkg.in/yaml.v3"
 
-	"sfx/plugin"
+	"sfx/provider"
 )
 
 type options struct {
@@ -20,14 +20,14 @@ type options struct {
 }
 
 func main() {
-	plugin.Run(plugin.HandlerFunc(handle))
+	provider.Run(provider.HandlerFunc(handle))
 }
 
-func handle(req plugin.Request) (plugin.Response, error) {
+func handle(req provider.Request) (provider.Response, error) {
 	var opts options
 	if len(req.Options) > 0 {
 		if err := yaml.Unmarshal(req.Options, &opts); err != nil {
-			return plugin.Response{}, fmt.Errorf("parse options: %w", err)
+			return provider.Response{}, fmt.Errorf("parse options: %w", err)
 		}
 	}
 
@@ -36,7 +36,7 @@ func handle(req plugin.Request) (plugin.Response, error) {
 		path = opts.Path
 	}
 	if path == "" {
-		return plugin.Response{}, errors.New("ref must include a file path or options.path must be set")
+		return provider.Response{}, errors.New("ref must include a file path or options.path must be set")
 	}
 
 	if key == "" {
@@ -45,29 +45,29 @@ func handle(req plugin.Request) (plugin.Response, error) {
 
 	cleartext, err := decrypt.File(path, opts.Format)
 	if err != nil {
-		return plugin.Response{}, fmt.Errorf("decrypt %q: %w", path, err)
+		return provider.Response{}, fmt.Errorf("decrypt %q: %w", path, err)
 	}
 
 	if key == "" {
-		return plugin.Response{Value: cleartext}, nil
+		return provider.Response{Value: cleartext}, nil
 	}
 
 	var root any
 	if err := yaml.Unmarshal(cleartext, &root); err != nil {
-		return plugin.Response{}, fmt.Errorf("decode decrypted payload: %w", err)
+		return provider.Response{}, fmt.Errorf("decode decrypted payload: %w", err)
 	}
 
 	value, err := navigate(root, parsePath(key))
 	if err != nil {
-		return plugin.Response{}, err
+		return provider.Response{}, err
 	}
 
 	buf, err := encodeValue(value)
 	if err != nil {
-		return plugin.Response{}, err
+		return provider.Response{}, err
 	}
 
-	return plugin.Response{Value: buf}, nil
+	return provider.Response{Value: buf}, nil
 }
 
 func splitRef(ref string) (string, string) {

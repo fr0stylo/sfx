@@ -5,7 +5,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"sfx/plugin"
+	"sfx/provider"
 )
 
 type Options struct {
@@ -13,15 +13,15 @@ type Options struct {
 }
 
 func main() {
-	plugin.Run(plugin.HandlerFunc(handle))
+	provider.Run(provider.HandlerFunc(handle))
 }
 
-func handle(req plugin.Request) (plugin.Response, error) {
+func handle(req provider.Request) (provider.Response, error) {
 	var opts Options
 	if err := yaml.Unmarshal(req.Options, &opts); err != nil {
-		return plugin.Response{}, err
+		return provider.Response{}, err
 	}
 
 	value := fmt.Sprintf("secret-for-%s", req.Ref)
-	return plugin.Response{Value: []byte(opts.Path + value)}, nil
+	return provider.Response{Value: []byte(opts.Path + value)}, nil
 }

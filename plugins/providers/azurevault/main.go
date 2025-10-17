@@ -12,7 +12,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets"
 	"gopkg.in/yaml.v3"
 
-	"sfx/plugin"
+	"sfx/provider"
 )
 
 const defaultAzureVaultTimeout = 30 * time.Second
@@ -26,20 +26,20 @@ type options struct {
 }
 
 func main() {
-	plugin.Run(plugin.HandlerFunc(handle))
+	provider.Run(provider.HandlerFunc(handle))
 }
 
-func handle(req plugin.Request) (plugin.Response, error) {
+func handle(req provider.Request) (provider.Response, error) {
 	var opts options
 	if len(req.Options) > 0 {
 		if err := yaml.Unmarshal(req.Options, &opts); err != nil {
-			return plugin.Response{}, fmt.Errorf("parse options: %w", err)
+			return provider.Response{}, fmt.Errorf("parse options: %w", err)
 		}
 	}
 
 	vaultURL, secretName, version, err := resolveTarget(req.Ref, opts)
 	if err != nil {
-		return plugin.Response{}, err
+		return provider.Response{}, err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), resolveTimeout(opts.Timeout, defaultAzureVaultTimeout))
@@ -47,24 +47,24 @@ func handle(req plugin.Request) (plugin.Response, error) {
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		return plugin.Response{}, fmt.Errorf("obtain azure credential: %w", err)
+		return provider.Response{}, fmt.Errorf("obtain azure credential: %w", err)
 	}
 
 	client, err := azsecrets.NewClient(vaultURL, cred, nil)
 	if err != nil {
-		return plugin.Response{}, fmt.Errorf("create key vault client: %w", err)
+		return provider.Response{}, fmt.Errorf("create key vault client: %w", err)
 	}
 
 	resp, err := client.GetSecret(ctx, secretName, version, nil)
 	if err != nil {
-		return plugin.Response{}, fmt.Errorf("get secret %q: %w", secretName, err)
+		return provider.Response{}, fmt.Errorf("get secret %q: %w", secretName, err)
 	}
 
 	if resp.Value == nil {
-		return plugin.Response{}, errors.New("secret value empty")
+		return provider.Response{}, errors.New("secret value empty")
 	}
 
-	return plugin.Response{Value: []byte(*resp.Value)}, nil
+	return provider.Response{Value: []byte(*resp.Value)}, nil
 }
 
 func resolveTarget(ref string, opts options) (string, string, string, error) {

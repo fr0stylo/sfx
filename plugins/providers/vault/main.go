@@ -10,7 +10,7 @@ import (
 	vault "github.com/hashicorp/vault/api"
 	"gopkg.in/yaml.v3"
 
-	"sfx/plugin"
+	"sfx/provider"
 )
 
 type options struct {
@@ -22,14 +22,14 @@ type options struct {
 }
 
 func main() {
-	plugin.Run(plugin.HandlerFunc(handle))
+	provider.Run(provider.HandlerFunc(handle))
 }
 
-func handle(req plugin.Request) (plugin.Response, error) {
+func handle(req provider.Request) (provider.Response, error) {
 	var opts options
 	if len(req.Options) > 0 {
 		if err := yaml.Unmarshal(req.Options, &opts); err != nil {
-			return plugin.Response{}, fmt.Errorf("parse options: %w", err)
+			return provider.Response{}, fmt.Errorf("parse options: %w", err)
 		}
 	}
 
@@ -37,10 +37,10 @@ func handle(req plugin.Request) (plugin.Response, error) {
 	token := firstNonEmpty(opts.Token, os.Getenv("VAULT_TOKEN"))
 
 	if addr == "" {
-		return plugin.Response{}, errors.New("vault address not provided (set options.address or VAULT_ADDR)")
+		return provider.Response{}, errors.New("vault address not provided (set options.address or VAULT_ADDR)")
 	}
 	if token == "" {
-		return plugin.Response{}, errors.New("vault token not provided (set options.token or VAULT_TOKEN)")
+		return provider.Response{}, errors.New("vault token not provided (set options.token or VAULT_TOKEN)")
 	}
 
 	config := vault.DefaultConfig()
@@ -51,7 +51,7 @@ func handle(req plugin.Request) (plugin.Response, error) {
 
 	client, err := vault.NewClient(config)
 	if err != nil {
-		return plugin.Response{}, fmt.Errorf("create vault client: %w", err)
+		return provider.Response{}, fmt.Errorf("create vault client: %w", err)
 	}
 	client.SetToken(token)
 	if opts.Namespace != "" {
@@ -60,7 +60,7 @@ func handle(req plugin.Request) (plugin.Response, error) {
 
 	path, field := splitRef(req.Ref)
 	if path == "" {
-		return plugin.Response{}, errors.New("ref must include a vault path")
+		return provider.Response{}, errors.New("ref must include a vault path")
 	}
 	if field == "" {
 		field = opts.Field
@@ -68,18 +68,18 @@ func handle(req plugin.Request) (plugin.Response, error) {
 
 	secret, err := client.Logical().Read(path)
 	if err != nil {
-		return plugin.Response{}, fmt.Errorf("read secret %q: %w", path, err)
+		return provider.Response{}, fmt.Errorf("read secret %q: %w", path, err)
 	}
 	if secret == nil {
-		return plugin.Response{}, fmt.Errorf("secret %q not found", path)
+		return provider.Response{}, fmt.Errorf("secret %q not found", path)
 	}
 
 	value, err := extractValue(secret.Data, field)
 	if err != nil {
-		return plugin.Response{}, fmt.Errorf("extract value: %w", err)
+		return provider.Response{}, fmt.Errorf("extract value: %w", err)
 	}
 
-	return plugin.Response{Value: value}, nil
+	return provider.Response{Value: value}, nil
 }
 
 func splitRef(ref string) (string, string) {

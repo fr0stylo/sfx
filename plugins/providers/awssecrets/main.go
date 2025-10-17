@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"gopkg.in/yaml.v3"
 
-	"sfx/plugin"
+	"sfx/provider"
 )
 
 const defaultAWSSecretsTimeout = 30 * time.Second
@@ -26,20 +26,20 @@ type options struct {
 }
 
 func main() {
-	plugin.Run(plugin.HandlerFunc(handle))
+	provider.Run(provider.HandlerFunc(handle))
 }
 
-func handle(req plugin.Request) (plugin.Response, error) {
+func handle(req provider.Request) (provider.Response, error) {
 	var opts options
 	if len(req.Options) > 0 {
 		if err := yaml.Unmarshal(req.Options, &opts); err != nil {
-			return plugin.Response{}, fmt.Errorf("parse options: %w", err)
+			return provider.Response{}, fmt.Errorf("parse options: %w", err)
 		}
 	}
 
 	secretID, versionID, versionStage := parseRef(req.Ref)
 	if secretID == "" {
-		return plugin.Response{}, errors.New("ref must include the secret identifier")
+		return provider.Response{}, errors.New("ref must include the secret identifier")
 	}
 
 	if opts.VersionID == "" && versionID != "" {
@@ -62,7 +62,7 @@ func handle(req plugin.Request) (plugin.Response, error) {
 
 	cfg, err := config.LoadDefaultConfig(ctx, cfgOpts...)
 	if err != nil {
-		return plugin.Response{}, fmt.Errorf("load aws config: %w", err)
+		return provider.Response{}, fmt.Errorf("load aws config: %w", err)
 	}
 
 	client := secretsmanager.NewFromConfig(cfg)
@@ -78,16 +78,16 @@ func handle(req plugin.Request) (plugin.Response, error) {
 
 	resp, err := client.GetSecretValue(ctx, input)
 	if err != nil {
-		return plugin.Response{}, fmt.Errorf("get secret %q: %w", secretID, err)
+		return provider.Response{}, fmt.Errorf("get secret %q: %w", secretID, err)
 	}
 
 	switch {
 	case resp.SecretString != nil:
-		return plugin.Response{Value: []byte(*resp.SecretString)}, nil
+		return provider.Response{Value: []byte(*resp.SecretString)}, nil
 	case len(resp.SecretBinary) > 0:
-		return plugin.Response{Value: resp.SecretBinary}, nil
+		return provider.Response{Value: resp.SecretBinary}, nil
 	default:
-		return plugin.Response{}, errors.New("secret contained no data")
+		return provider.Response{}, errors.New("secret contained no data")
 	}
 }
 

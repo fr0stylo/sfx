@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"gopkg.in/yaml.v3"
 
-	"sfx/plugin"
+	"sfx/provider"
 )
 
 const defaultAWSSSMTimeout = 30 * time.Second
@@ -24,20 +24,20 @@ type options struct {
 }
 
 func main() {
-	plugin.Run(plugin.HandlerFunc(handle))
+	provider.Run(provider.HandlerFunc(handle))
 }
 
-func handle(req plugin.Request) (plugin.Response, error) {
+func handle(req provider.Request) (provider.Response, error) {
 	var opts options
 	if len(req.Options) > 0 {
 		if err := yaml.Unmarshal(req.Options, &opts); err != nil {
-			return plugin.Response{}, fmt.Errorf("parse options: %w", err)
+			return provider.Response{}, fmt.Errorf("parse options: %w", err)
 		}
 	}
 
 	paramName := strings.TrimSpace(req.Ref)
 	if paramName == "" {
-		return plugin.Response{}, errors.New("ref must include the parameter name")
+		return provider.Response{}, errors.New("ref must include the parameter name")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), resolveTimeout(opts.Timeout, defaultAWSSSMTimeout))
@@ -53,12 +53,12 @@ func handle(req plugin.Request) (plugin.Response, error) {
 
 	cfg, err := config.LoadDefaultConfig(ctx, cfgOpts...)
 	if err != nil {
-		return plugin.Response{}, fmt.Errorf("load aws config: %w", err)
+		return provider.Response{}, fmt.Errorf("load aws config: %w", err)
 	}
 
 	client := ssm.NewFromConfig(cfg)
 
-	var withDecryption bool = true
+	var withDecryption = true
 	if opts.WithDecryption != nil {
 		withDecryption = *opts.WithDecryption
 	}
@@ -68,16 +68,16 @@ func handle(req plugin.Request) (plugin.Response, error) {
 		WithDecryption: &withDecryption,
 	})
 	if err != nil {
-		return plugin.Response{}, fmt.Errorf("get parameter %q: %w", paramName, err)
+		return provider.Response{}, fmt.Errorf("get parameter %q: %w", paramName, err)
 	}
 	if resp.Parameter == nil {
-		return plugin.Response{}, errors.New("parameter missing in response")
+		return provider.Response{}, errors.New("parameter missing in response")
 	}
 	if resp.Parameter.Value == nil {
-		return plugin.Response{}, errors.New("parameter value empty")
+		return provider.Response{}, errors.New("parameter value empty")
 	}
 
-	return plugin.Response{Value: []byte(*resp.Parameter.Value)}, nil
+	return provider.Response{Value: []byte(*resp.Parameter.Value)}, nil
 }
 
 func resolveTimeout(given time.Duration, fallback time.Duration) time.Duration {
