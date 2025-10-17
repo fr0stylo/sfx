@@ -1,227 +1,260 @@
-# sfx
+# sfx – Secret Fetcher & Exporter
 
-`sfx` is a pluggable secret fetcher and exporter CLI. It loads configuration from `.sfx.yaml` (via [spf13/viper](https://github.com/spf13/viper)), executes provider plugins to retrieve secrets, and renders the collected data through exporter plugins (for example, to a `.env` template).
+`sfx` is a pluggable CLI that retrieves secrets from diverse backends and renders them into the formats your tooling expects. It is designed as a product-grade foundation for teams that want deterministic secret materialisation without wiring every integration by hand.
 
-## Features
-- Length-delimited protobuf protocol over stdio for stable host↔plugin communication.
-- Lightweight helper packages for writing provider plugins (`sfx/plugin`) and exporters (`sfx/exporter`) without touching internal message types.
-- Shared execution helper (`sfx/internal/client`) for launching any plugin with a protobuf request/response contract.
-- Sample provider (`plugins/providers/file`) and exporter (`plugins/exporters/env`) illustrating the extension points. Option key summaries live in `plugins/providers/README.md` and `plugins/exporters/README.md`; each plugin folder includes a README describing its configuration pattern.
+- Fetch from Vault, SOPS, AWS, GCP, Azure, and more
+- Export to `.env`, Terraform `.tfvars`, templated files, shell scripts, Kubernetes Secrets, and Ansible configs
+- Add new providers/exporters with minimal glue thanks to the lightweight plugin SDKs
 
-## Getting Started
-Prerequisites:
-- Go 1.22+ installed.
-- `protoc` available on your PATH.
-- `protoc-gen-go` installed (`go install google.golang.org/protobuf/cmd/protoc-gen-go@latest`).
+---
 
-Clone the repository, then build the binaries:
+## Table of Contents
+
+1. [Key Features](#key-features)
+2. [Architecture at a Glance](#architecture-at-a-glance)
+3. [Installation](#installation)
+4. [Quick Start](#quick-start)
+5. [Configuration Primer](#configuration-primer)
+6. [Provider Catalog](#provider-catalog)
+7. [Exporter Catalog](#exporter-catalog)
+8. [Plugin Authoring](#plugin-authoring)
+9. [Build & Test Workflow](#build--test-workflow)
+10. [Roadmap & Ideas](#roadmap--ideas)
+11. [Contributing](#contributing)
+12. [License](#license)
+
+---
+
+## Key Features
+
+- **Polyglot secret ingestion** – pull from files, Vault, SOPS, AWS Secrets Manager, AWS SSM Parameter Store, GCP Secret Manager, and Azure Key Vault out of the box.
+- **Format-rich exporters** – ship secrets to `.env`, TFVARs, templated files, shell scripts, Kubernetes Secrets, and Ansible YAML.
+- **Composable plugin system** – add new providers or exporters without touching the host code via stable protobuf-based RPC helpers.
+- **Environment-aware defaults** – override configuration using environment variables (`SFX_*`).
+- **Batteries-included tooling** – Makefile, Go workspace, and per-plugin modules keep builds reproducible.
+
+---
+
+## Architecture at a Glance
+
+```
+┌─────────────┐       ┌───────────────┐        ┌───────────────┐
+│ .sfx.yaml   │  ───► │   sfx CLI     │  ───►  │ Exporter Plugin│
+│ secrets map │       │(Go executable)│        │ (standalone)   │
+└─────────────┘       │               │        └──────┬────────┘
+                      │               │               │ protobuf over stdio
+                      │               │        ┌──────▼────────┐
+                      │               │        │ Provider Plugin│
+                      └──────┬────────┘        │   (standalone) │
+                             │ protobuf over stdio └────────────┘
+                             ▼
+                          Secret stores
+```
+
+Plugins communicate with the host via length-prefixed protobuf envelopes over standard I/O, ensuring a stable boundary across languages and processes.
+
+---
+
+## Installation
+
+### Prerequisites
+
+- Go 1.22+ (the workspace targets Go 1.25.1)
+- `protoc` plus the Go protobuf plugin (`go install google.golang.org/protobuf/cmd/protoc-gen-go@latest`) when regenerating protobuf bindings
+
+### Build Everything
 
 ```bash
 make build
 ```
 
-Create a `.sfx.yaml` that maps secrets to provider binaries and selects an exporter. Defaults are provided for the built-in providers (`file`, `vault`, `sops`, `awssecrets`, `awsssm`, `gcpsecrets`, `azurevault`) and exporters (`env`, `tfvars`, `template`), so you can omit those entries if the defaults suit you:
+This compiles the host CLI (`bin/sfx`) and all provider/exporter binaries under `bin/providers/` and `bin/exporters/`. Use `make clean` to purge build artifacts.
 
-```yaml
-providers:
-  file: ./bin/providers/file
+### Build a Single Module
 
-exporters:
-  env: ./bin/exporters/env
-  tfvars: ./bin/exporters/tfvars
-  template: ./bin/exporters/template
-
-output:
-  type: env
-
-secrets:
-  SECRET_KEY:
-    ref: SECRET_KEY
-    provider: file
+```bash
+go build -o bin/providers/vault ./plugins/providers/vault
+go build -o bin/exporters/env ./plugins/exporters/env
 ```
 
-Running `./bin/sfx` will print the rendered export payload to stdout.
+---
 
-### HashiCorp Vault Provider
-- Ref format: `<path>#<field>` (field optional when the secret map only contains one entry). For example: `secret/data/my-app#password`.
-- Options (via `provider_options`): `address`, `token`, `namespace`, `field`, `timeout`. `address`/`token` fall back to `VAULT_ADDR` / `VAULT_TOKEN`.
-- Requires network access to your Vault cluster and whichever auth style you prefer (token only by default).
+## Quick Start
 
-Example:
+1. **Create `.sfx.yaml`**
 
-```yaml
-secrets:
-  DB_PASSWORD:
-    ref: secret/data/app/config#password
-    provider: vault
-    provider_options:
-      address: https://vault.example.com
-      namespace: teams/payments
-```
+   ```yaml
+   providers:
+     vault: ./bin/providers/vault
+     sops: ./bin/providers/sops
+     file: ./bin/providers/file
 
-### SOPS Provider
-- Ref format: `<file>#<path>` where `<path>` uses dot or slash-separated segments (`.` can be escaped with `\.`). Arrays can be indexed numerically, for example `secrets.enc.yaml#deep.list.0`. Omitting the key path returns the fully decrypted document. When you provide `provider_options.path`, set the ref to `#<path>` to target keys.
-- Options: `path` (when you prefer to set the file path outside the ref), `format` (overrides auto-detection), and `key_path` (default lookup when ref lacks one).
+   exporters:
+     env: ./bin/exporters/env
 
-Example:
+   output:
+     type: env
+     options:
+       key_template: "{{ .Value | replace \"-\" \"_\" | upper }}"
 
-```yaml
-secrets:
-  API_TOKEN:
-    ref: config/secrets.enc.yaml#integrations.api_token
-    provider: sops
-```
+   secrets:
+     DB_PASSWORD:
+       ref: secret/data/app/config#password
+       provider: vault
+       provider_options:
+         address: https://vault.example.com
+         namespace: platform-team
+         timeout: 5s
 
-### AWS Secrets Manager Provider
-- Ref format: `<secret-id>#<metadata>` where metadata optionally declares version or stage (`stage:AWSCURRENT`, `version:1234`, etc.). Metadata without a prefix defaults to a version stage.
-- Options: `region`, `profile`, `version_id`, `version_stage`, `timeout`.
-- Respects the default AWS credential chain; no additional auth wiring required.
+     API_TOKEN:
+       ref: config/secrets.enc.yaml#integrations.api_token
+       provider: sops
 
-Example:
+     SAMPLE_SECRET:
+       ref: SAMPLE_SECRET
+       provider: file
+       provider_options:
+         path: /tmp/
+   ```
 
-```yaml
-secrets:
-  PAYMENT_KEY:
-    ref: prod/payments/api-key#stage:AWSPREVIOUS
-    provider: awssecrets
-    provider_options:
-      region: us-east-1
-```
+2. **Run sfx**
 
-### AWS SSM Parameter Store Provider
-- Ref format: the full parameter name (for example, `/prod/payments/db/password`).
-- Options: `region`, `profile`, `with_decryption` (defaults to true), `timeout`.
+   ```bash
+   ./bin/sfx > .env
+   ```
 
-Example:
+   The exporter renders the aggregated secrets to stdout. Redirect or pipe the output into the desired workflow.
 
-```yaml
-secrets:
-  DB_PASSWORD:
-    ref: /prod/payments/db/password
-    provider: awsssm
-    provider_options:
-      region: us-west-2
-```
+3. **Override via Environment**
 
-### GCP Secret Manager Provider
-- Ref format accepts `projects/<project>/secrets/<secret>/versions/<version>`, `<project>/<secret>#<version>` (defaults to `latest` when omitted), or `<secret>#<version>` when `provider_options.project` supplies the project.
-- Options: `project`, `secret`, `version`, `timeout`.
-- Uses Application Default Credentials (ADC) for authentication.
+   Any `.sfx.yaml` key can be overridden with `SFX_*` environment variables (`.` → `_`). For example:
 
-Example:
+   ```bash
+   export SFX_PROVIDERS_VAULT=./custom/vault-provider
+   ```
 
-```yaml
-secrets:
-  API_TOKEN:
-    ref: my-gcp-project/api-token#5
-    provider: gcpsecrets
-```
+---
 
-### Azure Key Vault Provider
-- Ref format accepts `https://<vault>.vault.azure.net/secrets/<secret>/<version>`, `<vault-name>/<secret>#<version>`, or `#<version>` when `provider_options.secret` supplies the name.
-- Options: `vault_url`, `vault_name`, `secret`, `version`, `timeout`.
-- Uses `DefaultAzureCredential`, so configure whichever Azure auth mechanism you need (environment, managed identity, etc.).
+## Configuration Primer
 
-Example:
+- **providers** – map plugin name ➜ executable path.
+- **exporters** – map exporter name ➜ executable path.
+- **output** – choose the exporter (`type`) and pass plugin-specific `options`.
+- **secrets** – describe each secret: `ref`, `provider`, and optional `provider_options`.
 
-```yaml
-secrets:
-  STORAGE_CONN_STRING:
-    ref: finance-vault/storage-conn#latest
-    provider: azurevault
-```
+Consult the per-plugin documentation under `plugins/providers/<name>/README.md` and `plugins/exporters/<name>/README.md` for detailed option references.
 
-### ENV Exporter
-- Output type: `env`.
-- Options: `key_template` (Sprig-enabled Go template applied per key).
-- Renders lexicographically-sorted `KEY=value` lines, quoting values when necessary.
+---
 
-Example:
+## Provider Catalog
 
-```yaml
-output:
-  type: env
-  options:
-    key_template: "{{ .Value | replace \"-\" \"_\" | upper }}"
-```
+| Provider          | Reference Format                              | Key Options (subset)                          |
+|-------------------|-----------------------------------------------|-----------------------------------------------|
+| `file`            | `<logical-name>`                              | `path`                                        |
+| `vault`           | `<path>#<field>`                              | `address`, `token`, `namespace`, `field`, `timeout` |
+| `sops`            | `<file>#<path>`                               | `path`, `format`, `key_path`                  |
+| `awssecrets`      | `<secret-id>#stage:NAME` / `#version:ID`      | `region`, `profile`, `version_id`, `version_stage`, `timeout` |
+| `awsssm`          | `<parameter-name>`                            | `region`, `profile`, `with_decryption`, `timeout` |
+| `gcpsecrets`      | `projects/<project>/secrets/<secret>#<version>` | `project`, `secret`, `version`, `timeout`   |
+| `azurevault`      | `https://<vault>.vault.azure.net/secrets/...` | `vault_url`, `vault_name`, `secret`, `version`, `timeout` |
 
-### TFVARS Exporter
-- Output type: `tfvars`.
-- Options: `order` (list of keys to emit first; remaining keys are sorted alphabetically).
-- Strings are quoted automatically; multi-line values use heredoc syntax; numeric/bool strings are left unquoted.
+Each provider README includes build instructions, authentication notes, and advanced usage tips.
 
-Example:
+---
 
-```yaml
-output:
-  type: tfvars
-  options:
-    order: [db_password, api_key]
-```
+## Exporter Catalog
 
-### Template Exporter
-- Output type: `template`.
-- Options: `template` (inline Go template), `template_path` (file path alternative), `delims.left`, `delims.right` (custom delimiters).
-- The template receives `.Values` (map of strings) and `.Raw` (map of byte slices); Sprig functions are preloaded.
+| Exporter    | Output                          | Key Options (subset)                                       |
+|-------------|---------------------------------|-------------------------------------------------------------|
+| `env`       | `.env` key/value list           | `key_template`                                             |
+| `tfvars`    | Terraform `.tfvars`             | `order`                                                    |
+| `template`  | Go text/template                | `template`, `template_path`, `delims.left`, `delims.right` |
+| `shell`     | Shell export script             | `shebang`, `header`, `export_format`, `order`              |
+| `k8ssecret` | Kubernetes Secret manifest      | `name`, `namespace`, `type`, `labels`, `annotations`       |
+| `ansible`   | Ansible-compatible YAML mapping | `prefix`, `order`                                          |
 
-Example:
+The exporter READMEs contain ready-to-use configuration snippets for each format.
 
-```yaml
-output:
-  type: template
-  options:
-    template_path: ./templates/.env.tmpl
-```
+---
 
-## Architecture
-- `cmd/sfx`: CLI entrypoint; loads config, fetches secrets via `internal/client.Call`, and hands the map to an exporter.
-- `internal/rpc`: Generated protobuf definitions and framing helpers (`io.go`).
-- `plugin`: Public helper for provider plugins. Handlers operate on `plugin.Request` / `plugin.Response`.
-- `exporter`: Public helper for exporter plugins. Handlers receive a `map[string][]byte` and return binary payloads.
-- `internal/client`: Shared process runner that wraps `exec.Command`, writing and reading protobuf messages generically.
+## Plugin Authoring
 
-Communication uses a length-prefixed protobuf envelope, ensuring any consumer written in Go (or other languages) can participate.
-
-## Writing Plugins
-### Providers
-Implement a handler using `plugin.Run`:
+### Provider Skeleton
 
 ```go
 func main() {
 	plugin.Run(plugin.HandlerFunc(func(req plugin.Request) (plugin.Response, error) {
-		secret := lookupSecret(req.Ref)
+		// use req.Ref and req.Options
+		secret := []byte("value")
 		return plugin.Response{Value: secret}, nil
 	}))
 }
 ```
 
-### Exporters
-Exporters transform the collected secrets into an output format:
+### Exporter Skeleton
 
 ```go
 func main() {
 	exporter.Run(exporter.HandlerFunc(func(req exporter.Request) (exporter.Response, error) {
-		payload := renderTemplate(req.Values)
+		// req.Values map[string][]byte
+		payload := []byte("rendered output")
 		return exporter.Response{Payload: payload}, nil
 	}))
 }
 ```
 
-Both helpers propagate structured errors to the host without leaking protocol details to plugin authors.
+Both helpers take care of the protobuf transport, error propagation, and process wiring so you can focus on business logic.
 
-## Regenerating Protobufs
-When editing the `.proto` files under `proto/`, regenerate Go bindings:
+---
+
+## Build & Test Workflow
 
 ```bash
-protoc --go_out=paths=source_relative:. proto/secret.proto
-protoc --go_out=paths=source_relative:. proto/export.proto
-mv proto/*.pb.go internal/rpc/
+# Format
+make fmt
+
+# Run unit tests
+make test
+
+# Regenerate protobuf bindings (when proto/ changes)
+make proto
+
+# Full rebuild
+make clean && make build
 ```
 
-## Development
-- Format Go code with `gofmt`.
-- Build the full toolchain with `make build` (uses the workspace-aware Makefile). Use `make clean` to clear `bin/`.
-- Target a single module with `go build ./cmd/sfx`, `go -C plugins/providers build ./vault`, etc.—`go.work` keeps the modules linked locally.
+### Go Workspace Tips
+
+- `go.work` includes the root CLI and each plugin module; `go work sync` keeps the workspace tidy.
+- Build individual plugins with `go -C plugins/providers/<name> build`.
+
+---
+
+## Roadmap & Ideas
+
+- Additional providers (HashiCorp Consul, CyberArk, Google Secret Manager versions, etc.).
+- Exporters for Docker/Kubernetes env injection, JSON/INI files, and CI services.
+- First-class testing harness for plugin authors.
+
+Contributions and feature requests are welcome—see the next section.
+
+---
+
+## Contributing
+
+1. Fork the repo and create a branch (`git checkout -b feature/my-feature`).
+2. Run `make fmt` and `make test` before submitting.
+3. Follow Go best practices and keep README/CHANGELOG entries up to date.
+4. Open a pull request with a clear description and testing notes.
+
+Issues and discussions are encouraged if you have questions or ideas.
+
+---
 
 ## License
-Distributed under the MIT License. See [LICENSE](LICENSE) for details.
+
+Distributed under the MIT License. See [LICENSE](LICENSE) for the full text.
+
+---
+
+**Need help?** Open an issue or start a discussion. Happy secret shipping!

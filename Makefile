@@ -6,7 +6,8 @@ PLUGIN_BIN := $(BIN_DIR)/providers
 EXPORTER_BIN := $(BIN_DIR)/exporters
 
 PROVIDERS := file vault sops awssecrets awsssm gcpsecrets azurevault
-EXPORTERS := env tfvars template
+EXPORTERS := env tfvars template shell k8ssecret ansible
+EXPORTER_MODULE_DIRS := $(addprefix plugins/exporters/, $(EXPORTERS))
 
 .PHONY: all build build-sfx build-providers build-exporters fmt test proto clean
 
@@ -43,6 +44,9 @@ fmt:
 
 test:
 	$(GO) test ./...
+	@for dir in $(EXPORTER_MODULE_DIRS); do \
+		$(GO) -C $$dir test ./... || exit 1; \
+	done
 
 proto:
 	$(PROTOC) --go_out=paths=source_relative:. proto/secret.proto
