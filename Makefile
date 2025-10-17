@@ -6,7 +6,7 @@ PLUGIN_BIN := $(BIN_DIR)/providers
 EXPORTER_BIN := $(BIN_DIR)/exporters
 
 PROVIDERS := file vault sops awssecrets awsssm gcpsecrets azurevault
-EXPORTERS := env tfvars template
+EXPORTERS := env tfvars template shell k8ssecret ansible
 
 .PHONY: all build build-sfx build-providers build-exporters fmt test proto clean
 

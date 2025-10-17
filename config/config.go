@@ -44,6 +44,9 @@ func Load() (Config, error) {
 	v.SetDefault("exporters.env", "./bin/exporters/env")
 	v.SetDefault("exporters.tfvars", "./bin/exporters/tfvars")
 	v.SetDefault("exporters.template", "./bin/exporters/template")
+	v.SetDefault("exporters.shell", "./bin/exporters/shell")
+	v.SetDefault("exporters.k8ssecret", "./bin/exporters/k8ssecret")
+	v.SetDefault("exporters.ansible", "./bin/exporters/ansible")
 	v.SetDefault("output.type", "env")
 
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
