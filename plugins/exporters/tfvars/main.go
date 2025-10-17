@@ -10,7 +10,6 @@ import (
 
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/zclconf/go-cty/cty"
-	ctyjson "github.com/zclconf/go-cty/cty/json"
 	"gopkg.in/yaml.v3"
 
 	"sfx/exporter"
@@ -123,6 +122,39 @@ func maybeJSON(s string) bool {
 }
 
 func jsonToCty(b []byte) (cty.Value, error) {
-	raw := json.RawMessage(b)
-	return ctyjson.Unmarshal(raw, cty.DynamicPseudoType)
+	var v any
+	if err := json.Unmarshal(b, &v); err != nil {
+		return cty.NilVal, err
+	}
+	return convertToCty(v), nil
+}
+
+func convertToCty(v any) cty.Value {
+	switch val := v.(type) {
+	case nil:
+		return cty.NullVal(cty.DynamicPseudoType)
+	case bool:
+		return cty.BoolVal(val)
+	case float64:
+		if float64(int64(val)) == val {
+			return cty.NumberIntVal(int64(val))
+		}
+		return cty.NumberFloatVal(val)
+	case string:
+		return cty.StringVal(val)
+	case []any:
+		elems := make([]cty.Value, len(val))
+		for i, e := range val {
+			elems[i] = convertToCty(e)
+		}
+		return cty.TupleVal(elems)
+	case map[string]any:
+		result := make(map[string]cty.Value, len(val))
+		for k, e := range val {
+			result[k] = convertToCty(e)
+		}
+		return cty.ObjectVal(result)
+	default:
+		return cty.StringVal(fmt.Sprintf("%v", val))
+	}
 }
