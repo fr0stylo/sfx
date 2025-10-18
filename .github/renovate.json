@@ -1,0 +1,35 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "timezone": "UTC",
+  "dependencyDashboard": true,
+  "schedule": ["after 2am on sunday"],
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "matchManagers": ["gomod"],
+      "groupName": "Go dependencies",
+      "updateTypes": ["patch", "minor"],
+      "automerge": true,
+      "automergeType": "branch"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions",
+      "updateTypes": ["patch", "minor"],
+      "schedule": ["after 2am on monday"]
+    },
+    {
+      "matchManagers": ["dockerfile"],
+      "groupName": "Docker base images",
+      "updateTypes": ["patch"],
+      "enabled": true
+    },
+    {
+      "matchPaths": ["Makefile", "proto/**"],
+      "description": "Custom tools (Go, protobuf, build deps)",
+      "enabled": true,
+      "matchStrings": ["go install .*@v(?<currentValue>\\d+\\.\\d+\\.\\d+)"]
+    }
+  ]
+}
