@@ -1,28 +1,52 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "extends": [
+    "config:recommended"
+  ],
   "timezone": "UTC",
   "dependencyDashboard": true,
-  "schedule": ["after 2am on sunday"],
-  "labels": ["dependencies"],
+  "prCreation": "immediate",
+  "automerge": true,
+  "schedule": [
+    "after 2am on sunday"
+  ],
+  "labels": [
+    "dependencies"
+  ],
   "packageRules": [
     {
-      "matchManagers": ["gomod"],
+      "matchManagers": [
+        "gomod"
+      ],
       "groupName": "Go dependencies",
-      "updateTypes": ["patch", "minor"],
+      "updateTypes": [
+        "patch",
+        "minor"
+      ],
       "automerge": true,
       "automergeType": "branch"
     },
     {
-      "matchManagers": ["github-actions"],
+      "matchManagers": [
+        "github-actions"
+      ],
       "groupName": "GitHub Actions",
-      "updateTypes": ["patch", "minor"],
-      "schedule": ["after 2am on monday"]
+      "updateTypes": [
+        "patch",
+        "minor"
+      ],
+      "schedule": [
+        "after 2am on monday"
+      ]
     },
     {
-      "matchManagers": ["dockerfile"],
+      "matchManagers": [
+        "dockerfile"
+      ],
       "groupName": "Docker base images",
-      "updateTypes": ["patch"],
+      "updateTypes": [
+        "patch"
+      ],
       "enabled": true
     }
   ]
