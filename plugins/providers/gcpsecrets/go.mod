@@ -3,7 +3,7 @@ module github.com/fr0stylo/sfx/plugins/providers/gcpsecrets
 go 1.25.1
 
 require (
-	cloud.google.com/go/secretmanager v1.15.1
+	cloud.google.com/go/secretmanager v1.16.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
