@@ -8,6 +8,7 @@ import (
 
 var pool = make(map[string]*Process)
 
+// CallContext reuses per-path plugin processes to satisfy request/response pairs.
 func CallContext(ctx context.Context, path string, req proto.Message, resp proto.Message) error {
 	mpt, ok := pool[path]
 	if !ok {

@@ -1,3 +1,4 @@
+// Package rpc exposes the length-delimited protobuf transport helpers.
 package rpc
 
 import (

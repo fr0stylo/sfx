@@ -1,3 +1,4 @@
+// Package client provides helpers for executing plugin binaries via RPC.
 package client
 
 import (
@@ -21,12 +22,14 @@ func Call(ctx context.Context, path string, req proto.Message, resp proto.Messag
 
 	cmd := exec.CommandContext(ctx, path)
 	cmd.Env = os.Environ()
-	
+
 	ip, err := cmd.StdinPipe()
 	if err != nil {
 		return err
 	}
-	defer ip.Close()
+	defer func() {
+		_ = ip.Close()
+	}()
 
 	op, err := cmd.StdoutPipe()
 	if err != nil {

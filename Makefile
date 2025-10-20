@@ -7,9 +7,11 @@ EXPORTER_BIN := $(BIN_DIR)/exporters
 
 PROVIDERS := file vault sops awssecrets awsssm gcpsecrets azurevault
 EXPORTERS := env tfvars template shell k8ssecret ansible
+PROVIDER_MODULE_DIRS := $(addprefix plugins/providers/, $(PROVIDERS))
 EXPORTER_MODULE_DIRS := $(addprefix plugins/exporters/, $(EXPORTERS))
+PLUGIN_MODULE_DIRS := $(PROVIDER_MODULE_DIRS) $(EXPORTER_MODULE_DIRS)
 
-.PHONY: all build build-sfx build-providers build-exporters fmt test proto clean
+.PHONY: all build build-sfx build-providers build-exporters fmt lint test proto clean tidy-plugins
 
 all: build
 
@@ -41,6 +43,17 @@ $(EXPORTER_BIN)/%: | $(EXPORTER_BIN)
 
 fmt:
 	$(GO)fmt ./...
+
+lint:
+	$(GO) vet ./...
+	golangci-lint run ./...
+
+tidy-plugins:
+	@for dir in $(PLUGIN_MODULE_DIRS); do \
+		echo "Running go mod tidy in $$dir"; \
+		$(GO) -C $$dir mod tidy || exit 1; \
+	done
+	$(GO) work sync
 
 test:
 	$(GO) test ./...

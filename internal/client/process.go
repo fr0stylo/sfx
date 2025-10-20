@@ -12,12 +12,14 @@ import (
 	"github.com/fr0stylo/sfx/internal/rpc"
 )
 
+// Process owns a spawned plugin binary and the pipes used for RPC communication.
 type Process struct {
 	cmd *exec.Cmd
 	in  io.WriteCloser
 	out io.ReadCloser
 }
 
+// StartProcess launches the plugin binary at path and returns a Process wrapper.
 func StartProcess(ctx context.Context, path string) (*Process, error) {
 	cmd := exec.CommandContext(ctx, path)
 	cmd.Env = os.Environ()
@@ -42,7 +44,12 @@ func StartProcess(ctx context.Context, path string) (*Process, error) {
 	}, nil
 }
 
+// Call performs a round-trip protobuf exchange with the running process.
 func (p *Process) Call(ctx context.Context, req proto.Message, resp proto.Message) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	if req != nil {
 		if err := rpc.WriteDelimited(p.in, req); err != nil {
 			_ = p.cmd.Wait()
@@ -58,6 +65,7 @@ func (p *Process) Call(ctx context.Context, req proto.Message, resp proto.Messag
 	return nil
 }
 
+// Close closes IO pipes and waits for the process to exit.
 func (p *Process) Close() error {
 	_ = p.in.Close()
 	_ = p.out.Close()

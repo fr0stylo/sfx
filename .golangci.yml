@@ -1,0 +1,41 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      simplify: true
+    goimports:
+      local-prefixes:
+        - github.com/fr0stylo/sfx
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - revive
+    - staticcheck
+    - unused
+  settings:
+    errcheck:
+      exclude-functions:
+        - (*bufio.Writer).WriteString
+    revive:
+      confidence: 0.8
+      severity: warning
+      rules:
+        - name: blank-imports
+        - name: error-return
+        - name: indent-error-flow
+        - name: package-comments
+        - name: range-val-in-closure
+
+issues:
+  max-same-issues: 3
+  max-issues-per-linter: 0
