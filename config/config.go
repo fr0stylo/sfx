@@ -1,3 +1,4 @@
+// Package config loads sfx configuration from files and environment variables.
 package config
 
 import (
@@ -8,6 +9,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Config holds provider/exporter definitions and target output configuration.
 type Config struct {
 	Providers map[string]string `mapstructure:"providers" yaml:"providers"`
 	Exporters map[string]string `mapstructure:"exporters" yaml:"exporters"`
@@ -15,12 +17,14 @@ type Config struct {
 	Secrets   map[string]Secret `mapstructure:"secrets" yaml:"secrets"`
 }
 
+// Secret identifies a provider ref and per-call options for lookup.
 type Secret struct {
 	Ref             string         `mapstructure:"ref" yaml:"ref"`
 	Provider        string         `mapstructure:"provider" yaml:"provider"`
 	ProviderOptions map[string]any `mapstructure:"provider_options" yaml:"provider_options"`
 }
 
+// Output describes how fetched secrets should be rendered.
 type Output struct {
 	Type     string         `mapstructure:"type" yaml:"type"`
 	Template string         `mapstructure:"template" yaml:"template"`

@@ -1,3 +1,4 @@
+// Package provider contains helpers for implementing provider plugins.
 package provider
 
 import (

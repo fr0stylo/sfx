@@ -1,3 +1,4 @@
+// Package exporter contains helper routines for implementing exporter plugins.
 package exporter
 
 import (

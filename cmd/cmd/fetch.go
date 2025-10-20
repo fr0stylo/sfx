@@ -1,3 +1,4 @@
+// Package cmd implements CLI commands for the sfx tool.
 package cmd
 
 import (
@@ -27,7 +28,7 @@ func newFetchCommand() *cobra.Command {
 		Use:   "fetch",
 		Short: "Fetch secrets and render output",
 		Long:  "Fetch secrets from configured providers and render them using the configured exporter.",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runFetch(cmd.Context(), os.Stdout)
 		},
 	}
