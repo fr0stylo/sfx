@@ -57,7 +57,7 @@ tidy-plugins:
 
 test:
 	$(GO) test ./...
-	@for dir in $(EXPORTER_MODULE_DIRS); do \
+	@for dir in $(PLUGIN_MODULE_DIRS); do \
 		$(GO) -C $$dir test ./... || exit 1; \
 	done
 

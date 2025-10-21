@@ -52,7 +52,7 @@ func handle(req provider.Request) (provider.Response, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), resolveTimeout(opts.Timeout, defaultAWSSecretsTimeout))
 	defer cancel()
 
-	cfgOpts := []func(*config.LoadOptions) error{}
+	var cfgOpts []func(*config.LoadOptions) error
 	if opts.Region != "" {
 		cfgOpts = append(cfgOpts, config.WithRegion(opts.Region))
 	}
@@ -99,7 +99,6 @@ func parseRef(ref string) (secretID, versionID, versionStage string) {
 
 	segments := strings.SplitN(part, "#", 2)
 	secretID = strings.TrimSpace(segments[0])
-
 	if len(segments) == 2 {
 		meta := strings.TrimSpace(segments[1])
 		switch {

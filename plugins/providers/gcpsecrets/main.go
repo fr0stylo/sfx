@@ -47,7 +47,7 @@ func handle(req provider.Request) (provider.Response, error) {
 	if err != nil {
 		return provider.Response{}, fmt.Errorf("create secret manager client: %w", err)
 	}
-	defer client.Close()
+	defer client.Close() //nolint:errcheck
 
 	resp, err := client.AccessSecretVersion(ctx, &secretmanagerpb.AccessSecretVersionRequest{
 		Name: name,

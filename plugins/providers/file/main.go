@@ -1,7 +1,12 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
+	"io"
+	"net/url"
+	"os"
 
 	"gopkg.in/yaml.v3"
 
@@ -22,6 +27,37 @@ func handle(req provider.Request) (provider.Response, error) {
 		return provider.Response{}, err
 	}
 
-	value := fmt.Sprintf("secret-for-%s", req.Ref)
-	return provider.Response{Value: []byte(opts.Path + value)}, nil
+	refUri, err := url.Parse(req.Ref)
+	if err != nil {
+		return provider.Response{}, fmt.Errorf("parse ref: %w", err)
+	}
+
+	f, err := os.Open(opts.Path)
+	if err != nil {
+		return provider.Response{}, fmt.Errorf("open file: %w", err)
+	}
+	defer f.Close() //nolint:errcheck
+
+	switch refUri.Scheme {
+	case "env":
+		buf, err := parseEnvFile(f, []byte(refUri.Hostname()))
+		return provider.Response{Value: buf}, err
+	default:
+		return provider.Response{}, fmt.Errorf("unsupported scheme %q", refUri.Scheme)
+	}
+}
+
+func parseEnvFile(r io.Reader, ref []byte) ([]byte, error) {
+	scan := bufio.NewScanner(r)
+	scan.Split(bufio.ScanLines)
+	for scan.Scan() {
+		line := scan.Bytes()
+		if bytes.HasPrefix(line, ref) {
+			line = bytes.TrimPrefix(line, ref)
+			line = bytes.Trim(line, " \t\r\n\"'=")
+			return line, nil
+		}
+	}
+
+	return nil, nil
 }

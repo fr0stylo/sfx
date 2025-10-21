@@ -158,7 +158,7 @@ func encodeValue(v any) ([]byte, error) {
 	case fmt.Stringer:
 		return []byte(t.String()), nil
 	case json.RawMessage:
-		return []byte(t), nil
+		return t, nil
 	case []any, map[string]any, map[any]any:
 		normalized := normalize(t)
 		buf, err := json.Marshal(normalized)

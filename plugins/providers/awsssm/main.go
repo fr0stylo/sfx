@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -37,13 +36,13 @@ func handle(req provider.Request) (provider.Response, error) {
 
 	paramName := strings.TrimSpace(req.Ref)
 	if paramName == "" {
-		return provider.Response{}, errors.New("ref must include the parameter name")
+		return provider.Response{}, fmt.Errorf("ref must include the parameter name")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), resolveTimeout(opts.Timeout, defaultAWSSSMTimeout))
 	defer cancel()
 
-	cfgOpts := []func(*config.LoadOptions) error{}
+	var cfgOpts []func(*config.LoadOptions) error
 	if opts.Region != "" {
 		cfgOpts = append(cfgOpts, config.WithRegion(opts.Region))
 	}
@@ -71,10 +70,10 @@ func handle(req provider.Request) (provider.Response, error) {
 		return provider.Response{}, fmt.Errorf("get parameter %q: %w", paramName, err)
 	}
 	if resp.Parameter == nil {
-		return provider.Response{}, errors.New("parameter missing in response")
+		return provider.Response{}, fmt.Errorf("parameter missing in response")
 	}
 	if resp.Parameter.Value == nil {
-		return provider.Response{}, errors.New("parameter value empty")
+		return provider.Response{}, fmt.Errorf("parameter value empty")
 	}
 
 	return provider.Response{Value: []byte(*resp.Parameter.Value)}, nil
