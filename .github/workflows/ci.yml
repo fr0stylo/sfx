@@ -51,4 +51,6 @@ jobs:
         run: make build
 
       - name: Test
+        env:
+          SFX_LOCALSTACK_ENDPOINT: http://localstack:4566
         run: make test
