@@ -27,8 +27,8 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.39.6
 	github.com/fr0stylo/sfx v0.0.0-20251018111239-fd3d6a6525d1
+	github.com/aws/aws-sdk-go-v2 v1.39.5
 	github.com/stretchr/testify v1.11.1
 )
 

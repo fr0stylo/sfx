@@ -12,7 +12,7 @@ require (
 )
 
 require (
-	github.com/fr0stylo/sfx v0.0.0-20251018111239-fd3d6a6525d1
+	github.com/fr0stylo/sfx v0.0.0-20251021203845-8800531983ec
 	github.com/stretchr/testify v1.11.1
 )
 
