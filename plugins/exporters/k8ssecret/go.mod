@@ -9,6 +9,6 @@ require (
 	google.golang.org/protobuf v1.36.10 // indirect
 )
 
-require github.com/fr0stylo/sfx v0.0.0-20251021203845-8800531983ec
+require github.com/fr0stylo/sfx v0.0.0-20251206152401-4c2278c7682a
 
 replace github.com/fr0stylo/sfx v0.0.0-20251018111239-fd3d6a6525d1 => ../../..
